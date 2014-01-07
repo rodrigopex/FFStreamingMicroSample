@@ -19,21 +19,39 @@ import bb.multimedia 1.0
 
 Page {
     Container {
-        Label {
-            // Localized text with the dynamic translation and locale updates support
-            text: qsTr("Hello World") + Retranslate.onLocaleOrLanguageChanged
-            textStyle.base: SystemDefaults.TextStyles.BigText
+        layout: DockLayout {
         }
-        Button {
-            text: "Play!"
-            onClicked: {
-                app.playTest()
+        Container {
+            verticalAlignment: VerticalAlignment.Center
+            horizontalAlignment: HorizontalAlignment.Center
+            topMargin: 20
+            Label {
+                horizontalAlignment: HorizontalAlignment.Center
+                topMargin: 40
+                // Localized text with the dynamic translation and locale updates support
+                text: qsTr("OpenAL test ") + Retranslate.onLocaleOrLanguageChanged
+                textStyle.base: SystemDefaults.TextStyles.BigText
             }
-        }
-        Button {
-            text: "Play!"
-            onClicked: {
-                app.hello()
+            Button {
+                topMargin: 40
+                text: "Record"
+                onClicked: {
+                    openAlCtrl.record()
+                }
+            }
+            Button {
+                topMargin: 40
+                text: "Play"
+                onClicked: {
+                    openAlCtrl.play()
+                }
+            }
+            Button {
+                topMargin: 40
+                text: "Hello World!"
+                onClicked: {
+                    openAlCtrl.hello()
+                }
             }
         }
     }

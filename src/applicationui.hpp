@@ -18,15 +18,7 @@
 #define ApplicationUI_HPP_
 
 #include <QObject>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <AL/al.h>
-#include <AL/alc.h>
-#include <AL/alut.h>
-#include <sys/time.h>
-#include <time.h>
+#include "OpenALController.h"
 
 namespace bb {
 namespace cascades {
@@ -49,13 +41,13 @@ public:
 	ApplicationUI(bb::cascades::Application *app);
 	virtual ~ApplicationUI() {
 	}
-	Q_INVOKABLE void playTest();
-	Q_INVOKABLE void hello();
 private slots:
 	void onSystemLanguageChanged();
+	void onAboutToQuit();
 private:
 	QTranslator* m_pTranslator;
 	bb::cascades::LocaleHandler* m_pLocaleHandler;
+	OpenALController * m_openAlController;
 };
 
 #endif /* ApplicationUI_HPP_ */
