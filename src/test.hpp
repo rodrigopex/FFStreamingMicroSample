@@ -303,20 +303,8 @@ int vai() {
 	avcodec_register_all();
 	avformat_network_init();
 
-	/*if (argc != 2) {
-	 printf("usage: %s output_file\n"
-	 "API example program to output a media file with libavformat.\n"
-	 "This program generates a synthetic audio and video stream, encodes and\n"
-	 "muxes them into a file named output_file.\n"
-	 "The output format is automatically guessed according to the file extension.\n"
-	 "Raw images can also be output by using '%%d' in the filename.\n"
-	 "\n", argv[0]);
-	 return 1;
-	 }*/
-
-	//filename = argv[1];
 	/* allocate the output media context */
-	//fmt = av_guess_format(NULL,"test.wav",NULL);
+	fmt = av_guess_format(NULL, "rtp://192.168.25.17:1234", NULL);
 	avformat_alloc_output_context2(&oc, NULL, NULL, filename);
 	if (!oc) {
 		printf(
@@ -360,7 +348,7 @@ int vai() {
 			return 1;
 		}
 	}
-			/* Write the stream header, if any. */
+	/* Write the stream header, if any. */
 	ret = avformat_write_header(oc, NULL);
 	if (ret < 0) {
 		fprintf(stderr, "Error occurred when opening output file: %s\n",

@@ -82,7 +82,7 @@ void OpenALController::recordToStreamBuffer(qint16 *samples, int frame_size,
 		int nb_channels) {
 	//qDebug() << "Starting capture NOW!";
 
-	Q_UNUSED(nb_channels)
+	Q_UNUSED(nb_channels);
 	int samplesCaptured = 0, samplesAvailable = 0;
 	qint16 * captureBufPtr;
 	captureBufPtr = samples;
@@ -106,7 +106,7 @@ void OpenALController::recordToStreamBuffer(qint16 *samples, int frame_size,
 	}
 	//qDebug() << "oal:" << frame_size;;
 	//qDebug() << "\nDone capturing. samples captured:" << accum;
-	alcCaptureStop(m_captureDev);
+	/*alcCaptureStop(m_captureDev); */
 	//this->setRecording(false);
 }
 
