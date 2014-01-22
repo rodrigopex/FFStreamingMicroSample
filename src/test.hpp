@@ -1,0 +1,405 @@
+/*
+ * test.h
+ *
+ *  Created on: Jan 8, 2014
+ *      Author: rodrigopex
+ */
+
+#ifndef TEST_H_
+#define TEST_H_
+
+/*
+ * Copyright (c) 2003 Fabrice Bellard
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * @file
+ * libavformat API example.
+ *
+ * Output a media file in any supported libavformat format.
+ * The default codecs are used.
+ * @example doc/examples/muxing.c
+ */
+
+#include <math.h>
+extern "C" {
+
+#ifndef __STDC_CONSTANT_MACROS
+#define __STDC_CONSTANT_MACROS
+#endif
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+#include <libavutil/opt.h>
+#include <libavutil/time.h>
+#include <libavutil/mathematics.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
+#include <libavdevice/avdevice.h>
+
+}
+
+#include "OpenALController.h"
+
+/* 5 seconds stream duration */
+//#define STREAM_DURATION   20000.0
+//#define STREAM_FRAME_RATE 25 /* 25 images/s */
+//#define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
+//#define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
+
+static int sws_flags = SWS_BICUBIC;
+static OpenALController * openAL;
+
+static quint64 globalInitialTime = 0;
+
+/* Add an output stream. */
+static AVStream *add_stream(AVFormatContext *oc, AVCodec **codec,
+		enum AVCodecID codec_id) {
+	AVCodecContext *c;
+	AVStream *st;
+
+	/* find the encoder */
+	*codec = avcodec_find_encoder(codec_id);
+	if (!(*codec)) {
+		fprintf(stderr, "Could not find encoder for '%s'\n",
+		avcodec_get_name(codec_id));
+		exit(1);
+	}
+
+	st = avformat_new_stream(oc, *codec);
+	if (!st) {
+		fprintf(stderr, "Could not allocate stream\n");
+		exit(1);
+	}
+	st->id = oc->nb_streams - 1;
+	c = st->codec;
+
+	switch ((*codec)->type) {
+	case AVMEDIA_TYPE_AUDIO:
+		c->sample_fmt = AV_SAMPLE_FMT_S16;
+//		c->bit_rate = 64000;
+		c->bit_rate = 8000;
+//		c->sample_rate = 44100;
+		c->sample_rate = 8000;
+		c->channels = 1;
+		break;
+	default:
+		break;
+	}
+
+	/* Some formats want stream headers to be separate. */
+	if (oc->oformat->flags & AVFMT_GLOBALHEADER)
+		c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
+	return st;
+}
+
+/**************************************************************/
+/* audio output */
+
+static uint8_t **src_samples_data;
+static int src_samples_linesize;
+static int src_nb_samples;
+
+static int max_dst_nb_samples;
+uint8_t **dst_samples_data;
+int dst_samples_linesize;
+int dst_samples_size;
+
+struct SwrContext *swr_ctx = NULL;
+
+static void open_audio(AVFormatContext *oc, AVCodec *codec, AVStream *st) {
+	AVCodecContext *c;
+	int ret;
+
+	c = st->codec;
+
+	/* open it */
+	ret = avcodec_open2(c, codec, NULL);
+	if (ret < 0) {
+		fprintf(stderr, "Could not open audio codec: %s\n", av_err2str(ret));
+		exit(1);
+	}
+
+	src_nb_samples =
+			c->codec->capabilities & CODEC_CAP_VARIABLE_FRAME_SIZE ?
+					10000 : c->frame_size;
+
+	ret = av_samples_alloc_array_and_samples(&src_samples_data,
+			&src_samples_linesize, c->channels, src_nb_samples, c->sample_fmt,
+			0);
+	if (ret < 0) {
+		fprintf(stderr, "Could not allocate source samples\n");
+		exit(1);
+	}
+
+		//create resampler context /
+	if (c->sample_fmt != AV_SAMPLE_FMT_S16) {
+		qDebug() << "Converting...161";
+		swr_ctx = swr_alloc();
+		if (!swr_ctx) {
+			fprintf(stderr, "Could not allocate resampler context\n");
+			exit(1);
+		}
+
+			// set options /
+		av_opt_set_int(swr_ctx, "in_channel_count", c->channels, 0);
+		av_opt_set_int(swr_ctx, "in_sample_rate", c->sample_rate, 0);
+		av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+		av_opt_set_int(swr_ctx, "out_channel_count", c->channels, 0);
+		av_opt_set_int(swr_ctx, "out_sample_rate", c->sample_rate, 0);
+		av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", c->sample_fmt, 0);
+
+		// initialize the resampling context /
+		if ((ret = swr_init(swr_ctx)) < 0) {
+			fprintf(stderr, "Failed to initialize the resampling context\n");
+			exit(1);
+		}
+	}
+
+			/* compute the number of converted samples: buffering is avoided
+			 * ensuring that the output buffer will contain at least all the
+			 * converted input samples */
+	max_dst_nb_samples = src_nb_samples;
+	ret = av_samples_alloc_array_and_samples(&dst_samples_data,
+			&dst_samples_linesize, c->channels, max_dst_nb_samples,
+			c->sample_fmt, 0);
+	if (ret < 0) {
+		fprintf(stderr, "Could not allocate destination samples\n");
+		exit(1);
+	}
+	dst_samples_size = av_samples_get_buffer_size(NULL, c->channels,
+			max_dst_nb_samples, c->sample_fmt, 0);
+}
+
+/* Prepare a 16 bit dummy audio frame of 'frame_size' samples and
+ * 'nb_channels' channels. */
+static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels) {
+	openAL->recordToStreamBuffer(samples, frame_size, nb_channels);
+}
+
+static void write_audio_frame(AVFormatContext *oc, AVStream *st) {
+	AVCodecContext *c;
+	AVPacket pkt = { 0 }; // data and size must be 0;
+	AVFrame *frame = av_frame_alloc();
+	int got_packet, ret, dst_nb_samples;
+
+	av_init_packet(&pkt);
+	c = st->codec;
+	pkt.pts = av_gettime() - globalInitialTime;
+	frame->pts = pkt.pts;
+	qDebug() << "Packet PTS:" << pkt.pts;
+	get_audio_frame((int16_t *) src_samples_data[0], src_nb_samples,
+			c->channels);
+
+	/* convert samples from native format to destination codec format, using the resampler */
+	if (swr_ctx) {
+		qDebug() << "Converting...228";
+		/* compute destination number of samples */
+		dst_nb_samples = av_rescale_rnd(
+				swr_get_delay(swr_ctx, c->sample_rate) + src_nb_samples,
+				c->sample_rate, c->sample_rate, AV_ROUND_UP);
+		if (dst_nb_samples > max_dst_nb_samples) {
+			av_free(dst_samples_data[0]);
+			ret = av_samples_alloc(dst_samples_data, &dst_samples_linesize,
+					c->channels, dst_nb_samples, c->sample_fmt, 0);
+			if (ret < 0)
+				exit(1);
+			max_dst_nb_samples = dst_nb_samples;
+			dst_samples_size = av_samples_get_buffer_size(NULL, c->channels,
+					dst_nb_samples, c->sample_fmt, 0);
+		}
+
+		/* convert to destination format */
+		ret = swr_convert(swr_ctx, dst_samples_data, dst_nb_samples,
+				(const uint8_t **) src_samples_data, src_nb_samples);
+		if (ret < 0) {
+			fprintf(stderr, "Error while converting\n");
+			exit(1);
+		}
+	} else {
+		dst_samples_data[0] = src_samples_data[0];
+		dst_nb_samples = src_nb_samples;
+	}
+
+	frame->nb_samples = dst_nb_samples;
+	avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
+			dst_samples_data[0], dst_samples_size, 0);
+
+	ret = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+	if (ret < 0) {
+		fprintf(stderr, "Error encoding audio frame: %s\n", av_err2str(ret));
+		exit(1);
+	}
+
+	if (!got_packet)
+		return;
+
+	pkt.stream_index = st->index;
+
+	/* Write the compressed frame to the media file. */
+	//ret = av_interleaved_write_frame(oc, &pkt);
+	ret = av_write_frame(oc, &pkt);
+	if (ret != 0) {
+		fprintf(stderr, "Error while writing audio frame: %s\n",
+		av_err2str(ret));
+		exit(1);
+	}
+	avcodec_free_frame(&frame);
+}
+
+static void close_audio(AVFormatContext *oc, AVStream *st) {
+	if (st->codec)
+		avcodec_close(st->codec);
+	if (src_samples_data[0])
+		av_free(src_samples_data[0]);
+	//if(dst_samples_data[0]) av_free(dst_samples_data[0]);
+}
+
+static AVFrame *frame;
+//static AVPicture src_picture, dst_picture;
+static int frame_count;
+
+/**************************************************************/
+/* media file output */
+
+//#define AVFMT_NOFILE        0x0001
+int vai() {
+	openAL = new OpenALController;
+	const char *filename = "rtp://192.168.25.17:1234";
+	//const char *filename = "rtp://169.254.0.1:1234";
+	//const char *filename = "tmp/test.ogg";
+	AVOutputFormat *fmt;
+	AVFormatContext *oc;
+	AVStream *audio_st;
+	AVCodec *audio_codec;
+	double audio_time;
+	int ret;
+
+	/* Initialize libavcodec, and register all codecs and formats. */
+	av_register_all();
+	avcodec_register_all();
+	avformat_network_init();
+
+	/*if (argc != 2) {
+	 printf("usage: %s output_file\n"
+	 "API example program to output a media file with libavformat.\n"
+	 "This program generates a synthetic audio and video stream, encodes and\n"
+	 "muxes them into a file named output_file.\n"
+	 "The output format is automatically guessed according to the file extension.\n"
+	 "Raw images can also be output by using '%%d' in the filename.\n"
+	 "\n", argv[0]);
+	 return 1;
+	 }*/
+
+	//filename = argv[1];
+	/* allocate the output media context */
+	//fmt = av_guess_format(NULL,"test.wav",NULL);
+	avformat_alloc_output_context2(&oc, NULL, NULL, filename);
+	if (!oc) {
+		printf(
+				"Could not deduce output format from file extension: using RTP.\n");
+		avformat_alloc_output_context2(&oc, NULL, "rtp", filename);
+	}
+	if (!oc) {
+		return 1;
+	}
+	fmt = oc->oformat;
+
+	/* Add the audio and video streams using the default format codecs
+	 * and initialize the codecs. */
+	audio_st = NULL;
+
+	if (fmt->audio_codec != AV_CODEC_ID_NONE) {
+		//qDebug() << "Trying to create an stream if " << fmt->audio_codec;
+		audio_st = add_stream(oc, &audio_codec, fmt->audio_codec);
+	}
+
+	/* Now that all the parameters are set, we can open the audio and
+	 * video codecs and allocate the necessary encode buffers. */
+	if (audio_st)
+		open_audio(oc, audio_codec, audio_st);
+
+	av_dump_format(oc, 0, filename, 1);
+
+	/* open the output file, if needed */
+	if (!(fmt->flags & AVFMT_NOFILE)) {
+		//AVDictionary *opt = NULL;
+		//av_dict_set(&opt, "re", "1", 0);
+		//qDebug() << "### Options: " << opt;
+		//ret = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
+		//		&oc->interrupt_callback, &opt);
+		ret = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
+				&oc->interrupt_callback, NULL);
+
+		if (ret < 0) {
+			fprintf(stderr, "Could not open '%s': %s\n", filename,
+			av_err2str(ret));
+			return 1;
+		}
+	}
+			/* Write the stream header, if any. */
+	ret = avformat_write_header(oc, NULL);
+	if (ret < 0) {
+		fprintf(stderr, "Error occurred when opening output file: %s\n",
+		av_err2str(ret));
+		return 1;
+	}
+
+	if (frame)
+		frame->pts = 0;
+	globalInitialTime = av_gettime();
+	for (;;) {
+		/* Compute current audio and video time. */
+		audio_time =
+				audio_st ?
+						audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
+
+//		if ((!audio_st || audio_time >= STREAM_DURATION))
+		if (!audio_st) {// || audio_time >= STREAM_DURATION))
+			break;
+		}
+		write_audio_frame(oc, audio_st);
+	}
+	/* Write the trailer, if any. The trailer must be written before you
+	 * close the CodecContexts open when you wrote the header; otherwise
+	 * av_write_trailer() may try to use memory that was freed on
+	 * av_codec_close(). */
+	av_write_trailer(oc);
+
+	/* Close each codec. */
+	if (audio_st)
+		close_audio(oc, audio_st);
+
+	if (!(fmt->flags & AVFMT_NOFILE))
+		/* Close the output file. */
+		avio_close(oc->pb);
+
+	/* free the stream */
+	avformat_free_context(oc);
+	return 0;
+}
+
+#endif

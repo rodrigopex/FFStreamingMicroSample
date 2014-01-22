@@ -87,17 +87,31 @@
 
     <asset path="icon.png">icon.png</asset>
     <asset path="assets">assets</asset>
+    
 
     <!-- Locale support -->
     <asset path="translations" dest="qm">
         <include name="*.qm"/>
     </asset>
+    <asset path="lib/ffmpeg/lib/libavcodec.so" type="Qnx/Elf">lib/libavcodec.so.55</asset>
+    <asset path="lib/ffmpeg/lib/libavdevice.so" type="Qnx/Elf">lib/libavdevice.so.55</asset>
+    <asset path="lib/ffmpeg/lib/libavfilter.so" type="Qnx/Elf">lib/libavfilter.so.3</asset>
+    <asset path="lib/ffmpeg/lib/libavformat.so" type="Qnx/Elf">lib/libavformat.so.55</asset>
+    <asset path="lib/ffmpeg/lib/libavutil.so" type="Qnx/Elf">lib/libavutil.so.52</asset>
+    <asset path="lib/ffmpeg/lib/libpostproc.so" type="Qnx/Elf">lib/libpostproc.so.52</asset>
+    <asset path="lib/ffmpeg/lib/libswresample.so" type="Qnx/Elf">lib/libswresample.so.0</asset>
+    <asset path="lib/ffmpeg/lib/libswscale.so" type="Qnx/Elf">lib/libswscale.so.2</asset>
+    <asset path="lib/x264/lib/libx264.so.140" type="Qnx/Elf">lib/libx264.so.140</asset>
+    <!--asset path="lib/ffmpeg/lib">lib</asset-->
+    <!--asset path="lib/x264/lib">lib</asset-->
 
     <!-- Request permission to execute native code.  Required for native applications. -->
     <permission system="true">run_native</permission>
     <permission>read_device_identifying_information</permission>
     <permission>record_audio</permission>
     <permission>access_shared</permission>
+    <permission>access_internet</permission>
+    <permission>run_when_backgrounded</permission>
     <env var="LD_LIBRARY_PATH" value="app/native/lib:/usr/lib/qt4/lib"/>
 
 </qnx>

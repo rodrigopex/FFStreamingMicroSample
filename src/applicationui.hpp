@@ -47,7 +47,7 @@ private slots:
 private:
 	QTranslator* m_pTranslator;
 	bb::cascades::LocaleHandler* m_pLocaleHandler;
-	OpenALController * m_openAlController;
+	//OpenALController * m_openAlController;
 };
 
 #endif /* ApplicationUI_HPP_ */

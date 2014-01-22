@@ -1,0 +1,14 @@
+prefix=/Users/rodrigopex/BlackBerry/Activities/PortingLibs/FFmpeg-master/arm-qnx/release
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavcodec
+Description: FFmpeg codec library
+Version: 55.44.100
+Requires: 
+Requires.private: libavutil = 52.55.100
+Conflicts:
+Libs: -L${libdir}  -lavcodec 
+Libs.private: -lsocket -liconv -lopenal -lx264 -lm -lbz2 -lz
+Cflags: -I${includedir}

@@ -1,0 +1,14 @@
+prefix=/Users/rodrigopex/BlackBerry/Activities/PortingLibs/FFmpeg-master/arm-qnx/release
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavformat
+Description: FFmpeg container format library
+Version: 55.21.102
+Requires: 
+Requires.private: libavcodec = 55.44.100
+Conflicts:
+Libs: -L${libdir}  -lavformat 
+Libs.private: -lsocket -liconv -lopenal -lx264 -lm -lbz2 -lz
+Cflags: -I${includedir}

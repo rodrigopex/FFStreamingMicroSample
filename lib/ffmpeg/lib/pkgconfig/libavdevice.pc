@@ -1,0 +1,14 @@
+prefix=/Users/rodrigopex/BlackBerry/Activities/PortingLibs/FFmpeg-master/arm-qnx/release
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavdevice
+Description: FFmpeg device handling library
+Version: 55.5.102
+Requires: 
+Requires.private: libavfilter = 3.91.100, libavformat = 55.21.102
+Conflicts:
+Libs: -L${libdir}  -lavdevice 
+Libs.private: -lsocket -liconv -lopenal -lx264 -lm -lbz2 -lz
+Cflags: -I${includedir}

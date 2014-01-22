@@ -16,8 +16,14 @@
 
 import bb.cascades 1.2
 import bb.multimedia 1.0
+import tc.OpenAL 1.0
 
 Page {
+    
+    attachedObjects: OpenALController {
+        id: openAL
+    }
+    
     Container {
         layout: DockLayout {
         }
@@ -36,21 +42,71 @@ Page {
                 topMargin: 40
                 text: "Record"
                 onClicked: {
-                    openAlCtrl.record()
+                    openAL.record()
+                }
+            }
+            Container {
+                id: recordingStatus
+                visible: false
+                maxWidth: 400
+                topPadding: 40
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    topMargin: 40
+                    // Localized text with the dynamic translation and locale updates support
+                    text: {
+                        "Recording"
+                    }
+                    textStyle.base: SystemDefaults.TextStyles.PrimaryText
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                }
+                ActivityIndicator {
+                    preferredWidth: 100
+                    running: true
                 }
             }
             Button {
                 topMargin: 40
                 text: "Play"
                 onClicked: {
-                    openAlCtrl.play()
+                    openAL.play()
+                }
+            }
+            Container {
+                id: playingStatus
+                visible: false
+                maxWidth: 400
+                topPadding: 40
+                layout: StackLayout {
+                    orientation: LayoutOrientation.LeftToRight
+                }
+                Label {
+                    verticalAlignment: VerticalAlignment.Center
+                    topMargin: 40
+                    // Localized text with the dynamic translation and locale updates support
+                    text: {
+                        "Playing"
+                    }
+                    textStyle.base: SystemDefaults.TextStyles.PrimaryText
+                    layoutProperties: StackLayoutProperties {
+                        spaceQuota: 1
+                    }
+                }
+                ActivityIndicator {
+                    preferredWidth: 100
+                    running: true
                 }
             }
             Button {
                 topMargin: 40
                 text: "Hello World!"
                 onClicked: {
-                    openAlCtrl.hello()
+                    openAL.hello()
                 }
             }
         }

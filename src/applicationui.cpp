@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//$ LD_LIBRARY_PATH=. ./ffmpeg -f openal -i "ACOUSTIC, ACOUSTIC PCM 0 (CARD=1,DEV=1)" -ar 8000 -ac 1 -ab 8000 -f "rtp://192.168.25.8:1234"
+
 #include "applicationui.hpp"
 
 #include <bb/cascades/Application>
@@ -21,13 +23,18 @@
 #include <bb/cascades/AbstractPane>
 #include <bb/cascades/LocaleHandler>
 
+#include "ffmpegdevices.h"
+
+#include "test.hpp"
+//#include "MyStreamReader.h"
+
 using namespace bb::cascades;
 
 ApplicationUI::ApplicationUI(bb::cascades::Application *app) :
 		QObject(app) {
 
 	connect(app, SIGNAL(aboutToQuit()), this, SLOT(onAboutToQuit()));
-	m_openAlController = new OpenALController(this);
+	OpenALController::registerQmlTypes();
 	// prepare the localization
 	m_pTranslator = new QTranslator(this);
 	m_pLocaleHandler = new LocaleHandler(this);
@@ -37,8 +44,6 @@ ApplicationUI::ApplicationUI(bb::cascades::Application *app) :
 			SLOT(onSystemLanguageChanged()));
 	// This is only available in Debug builds
 	Q_ASSERT(res);
-	// Since the variable is not used in the app, this is added to avoid a
-	// compiler warning
 	Q_UNUSED(res);
 
 	// initial load
@@ -46,15 +51,19 @@ ApplicationUI::ApplicationUI(bb::cascades::Application *app) :
 
 	// Create scene document from main.qml asset, the parent is set
 	// to ensure the document gets destroyed properly at shut down.
-	QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
-	qml->setContextProperty("openAlCtrl", m_openAlController);
+//	QmlDocument *qml = QmlDocument::create("asset:///main.qml").parent(this);
+	QmlDocument *qml = QmlDocument::create("asset:///mainStub.qml").parent(this);
+
 	// Create root object for the UI
 	AbstractPane *root = qml->createRootObject<AbstractPane>();
 
 	// Set created root object as the application scene
 	app->setScene(root);
-}
+	//listFFmpegDevices();
+	vai();
+	//system("app/native/assets/ffmpeg -re -f lavfi -i aevalsrc=\"sin(400*2*PI*t)\" -ar 8000 -f mulaw -f rtp rtp://192.168.25.8:1234");
 
+}
 void ApplicationUI::onSystemLanguageChanged() {
 	QCoreApplication::instance()->removeTranslator(m_pTranslator);
 	// Initiate, load and install the application translation files.
@@ -67,6 +76,5 @@ void ApplicationUI::onSystemLanguageChanged() {
 
 void ApplicationUI::onAboutToQuit() {
 	// Shut down OpenAL
-	//delete this->
 }
 

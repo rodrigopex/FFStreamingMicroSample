@@ -1,0 +1,14 @@
+prefix=/Users/rodrigopex/BlackBerry/Activities/PortingLibs/FFmpeg-master/arm-qnx/release
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libavfilter
+Description: FFmpeg audio/video filtering library
+Version: 3.91.100
+Requires: 
+Requires.private: libpostproc = 52.3.100, libswresample = 0.17.104, libswscale = 2.5.101, libavformat = 55.21.102, libavcodec = 55.44.100, libavutil = 52.55.100
+Conflicts:
+Libs: -L${libdir}  -lavfilter 
+Libs.private: -lsocket -liconv -lopenal -lx264 -lm -lbz2 -lz
+Cflags: -I${includedir}

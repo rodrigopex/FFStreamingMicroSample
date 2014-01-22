@@ -5,19 +5,25 @@ device {
     CONFIG(debug, debug|release) {
         SOURCES +=  $$quote($$BASEDIR/src/OpenALController.cpp) \
                  $$quote($$BASEDIR/src/applicationui.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+                 $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/screen_shot.cpp)
 
         HEADERS +=  $$quote($$BASEDIR/src/OpenALController.h) \
-                 $$quote($$BASEDIR/src/applicationui.hpp)
+                 $$quote($$BASEDIR/src/applicationui.hpp) \
+                 $$quote($$BASEDIR/src/ffmpegdevices.h) \
+                 $$quote($$BASEDIR/src/test.hpp)
     }
 
     CONFIG(release, debug|release) {
         SOURCES +=  $$quote($$BASEDIR/src/OpenALController.cpp) \
                  $$quote($$BASEDIR/src/applicationui.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+                 $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/screen_shot.cpp)
 
         HEADERS +=  $$quote($$BASEDIR/src/OpenALController.h) \
-                 $$quote($$BASEDIR/src/applicationui.hpp)
+                 $$quote($$BASEDIR/src/applicationui.hpp) \
+                 $$quote($$BASEDIR/src/ffmpegdevices.h) \
+                 $$quote($$BASEDIR/src/test.hpp)
     }
 }
 
@@ -25,10 +31,13 @@ simulator {
     CONFIG(debug, debug|release) {
         SOURCES +=  $$quote($$BASEDIR/src/OpenALController.cpp) \
                  $$quote($$BASEDIR/src/applicationui.cpp) \
-                 $$quote($$BASEDIR/src/main.cpp)
+                 $$quote($$BASEDIR/src/main.cpp) \
+                 $$quote($$BASEDIR/src/screen_shot.cpp)
 
         HEADERS +=  $$quote($$BASEDIR/src/OpenALController.h) \
-                 $$quote($$BASEDIR/src/applicationui.hpp)
+                 $$quote($$BASEDIR/src/applicationui.hpp) \
+                 $$quote($$BASEDIR/src/ffmpegdevices.h) \
+                 $$quote($$BASEDIR/src/test.hpp)
     }
 }
 

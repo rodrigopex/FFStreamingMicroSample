@@ -1,0 +1,14 @@
+prefix=/Users/rodrigopex/BlackBerry/Activities/PortingLibs/FFmpeg-master/arm-qnx/release
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: libswscale
+Description: FFmpeg image rescaling library
+Version: 2.5.101
+Requires: 
+Requires.private: libavutil = 52.55.100
+Conflicts:
+Libs: -L${libdir}  -lswscale 
+Libs.private: -lm
+Cflags: -I${includedir}
